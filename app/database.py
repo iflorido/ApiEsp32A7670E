@@ -26,7 +26,23 @@ engine = create_engine(
 
 
 def init_db() -> None:
-    """Crea las tablas y activa WAL. Idempotente."""
+    """Crea el directorio y las tablas, y activa WAL. Idempotente."""
+    # Asegura que el directorio del .db existe y es escribible. En Plesk el
+    # volumen montado en /data puede no existir como ruta o no tener permisos.
+    db_dir = os.path.dirname(DB_PATH) or "."
+    try:
+        os.makedirs(db_dir, exist_ok=True)
+    except PermissionError:
+        raise RuntimeError(
+            f"No se puede crear el directorio '{db_dir}'. Revisa los permisos "
+            f"del volumen montado en el contenedor (debe ser escribible)."
+        )
+    if not os.access(db_dir, os.W_OK):
+        raise RuntimeError(
+            f"El directorio '{db_dir}' no es escribible por el usuario del "
+            f"contenedor. En Plesk, ajusta los permisos del volumen o monta "
+            f"uno que el contenedor pueda escribir."
+        )
     SQLModel.metadata.create_all(engine)
     with engine.connect() as conn:
         conn.exec_driver_sql("PRAGMA journal_mode=WAL;")
