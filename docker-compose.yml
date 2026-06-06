@@ -1,0 +1,28 @@
+services:
+  esp7670-api:
+    # Para construir localmente:    build: .
+    # Para usar la imagen de GHCR:  image: ghcr.io/<tu-usuario>/<tu-repo>:latest
+    build: .
+    container_name: esp7670-api
+    restart: unless-stopped
+    ports:
+      - "8017:8000"          # 8017 (host) -> 8000 (uvicorn). Detras de tu reverse proxy.
+    volumes:
+      - esp7670-data:/data   # SQLite persistente (el volumen se crea en Plesk)
+    # -- Variables de entorno --------------------------------------------------
+    # NO se ponen valores aqui. Los valores se definen al crear el contenedor
+    # en Plesk (seccion de variables de entorno). Esta lista de solo-nombre
+    # documenta cuales hay que crear; Docker toma el valor del entorno del host.
+    environment:
+      - DB_PATH
+      - DEVICE_TOKEN
+      - TELEGRAM_TOKEN
+      - TELEGRAM_ALLOWED_CHAT
+      - WEBHOOK_SECRET
+      - PUBLIC_URL
+      - DASHBOARD_USER
+      - DASHBOARD_PASS
+      - SMS_COST_EUR
+
+volumes:
+  esp7670-data:

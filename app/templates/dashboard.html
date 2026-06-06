@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESP7670 · Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --panel: #15181d;
+    --panel-2: #1b1f26;
+    --line: #2a2f38;
+    --txt: #e6e8ec;
+    --muted: #7a828f;
+    --amber: #f5a623;
+    --green: #3ddc84;
+    --red: #ff5252;
+    --blue: #4aa8ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: 'Archivo', sans-serif;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(245,166,35,0.04), transparent 40%),
+      linear-gradient(rgba(42,47,56,0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(42,47,56,0.15) 1px, transparent 1px);
+    background-size: auto, 40px 40px, 40px 40px;
+    min-height: 100vh;
+  }
+  .mono { font-family: 'Space Mono', monospace; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; border-bottom: 1px solid var(--line);
+    background: rgba(13,15,18,0.85); backdrop-filter: blur(8px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo h1 { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; }
+  .logo .tag { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .status-pill {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 16px; border-radius: 100px; border: 1px solid var(--line);
+    font-family: 'Space Mono', monospace; font-size: 13px;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.on { background: var(--green); box-shadow: 0 0 12px var(--green); animation: pulse 2s infinite; }
+  .dot.off { background: var(--red); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .wrap { padding: 28px; max-width: 1400px; margin: 0 auto; }
+  .grid { display: grid; gap: 18px; }
+  .cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .cols-2 { grid-template-columns: 2fr 1fr; }
+  @media (max-width: 900px) { .cols-4,.cols-3,.cols-2 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .cols-4,.cols-3,.cols-2 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 20px; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%;
+    background: var(--amber); opacity: 0; transition: opacity .3s;
+  }
+  .card:hover::before { opacity: 1; }
+  .card .label {
+    font-size: 11px; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1.5px; margin-bottom: 10px; font-weight: 600;
+  }
+  .card .big { font-size: 34px; font-weight: 900; font-family: 'Space Mono', monospace; line-height: 1; }
+  .card .sub { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .card .unit { font-size: 15px; color: var(--amber); font-weight: 400; }
+
+  .section-title {
+    font-size: 13px; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--muted); margin: 32px 0 14px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+  /* Barra de senal */
+  .signal-bars { display: flex; align-items: flex-end; gap: 4px; height: 40px; margin-top: 6px; }
+  .signal-bars div { flex: 1; background: var(--line); border-radius: 2px; transition: all .4s; }
+  .signal-bars div.active { background: var(--amber); }
+
+  /* Botones de comando */
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; }
+  button.cmd {
+    font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700;
+    padding: 12px 18px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--txt); cursor: pointer;
+    transition: all .2s; text-transform: uppercase; letter-spacing: 1px;
+  }
+  button.cmd:hover { border-color: var(--amber); color: var(--amber); transform: translateY(-2px); }
+  button.cmd.danger:hover { border-color: var(--red); color: var(--red); }
+
+  /* Tablas */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; color: var(--muted); font-weight: 600;
+       text-transform: uppercase; font-size: 10px; letter-spacing: 1px; border-bottom: 1px solid var(--line); }
+  td { padding: 10px 12px; border-bottom: 1px solid rgba(42,47,56,0.4); }
+  tr:hover td { background: rgba(245,166,35,0.03); }
+  .badge { padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 700;
+           font-family: 'Space Mono', monospace; }
+  .badge.done { background: rgba(61,220,132,0.15); color: var(--green); }
+  .badge.pending { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .badge.error { background: rgba(255,82,82,0.15); color: var(--red); }
+  .badge.sent { background: rgba(74,168,255,0.15); color: var(--blue); }
+  .tag-in { color: var(--green); } .tag-out { color: var(--blue); }
+
+  .scroll { max-height: 360px; overflow-y: auto; }
+  .scroll::-webkit-scrollbar { width: 6px; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+  .cost-hero { font-size: 48px; font-weight: 900; font-family: 'Space Mono', monospace; color: var(--amber); }
+  .map-link { color: var(--blue); text-decoration: none; font-family: 'Space Mono', monospace; }
+  .map-link:hover { text-decoration: underline; }
+  .muted { color: var(--muted); }
+  .updated { font-size: 11px; color: var(--muted); font-family: 'Space Mono', monospace; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+      <rect x="2" y="2" width="30" height="30" rx="7" stroke="#f5a623" stroke-width="2"/>
+      <circle cx="17" cy="17" r="4" fill="#f5a623"/>
+      <path d="M17 4v4M17 26v4M4 17h4M26 17h4" stroke="#f5a623" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>ESP7670<span style="color:var(--amber)">·</span>CTRL</h1>
+      <div class="tag">A7670E · TMC2209 · Telemetría 4G</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <span class="dot" id="status-dot"></span>
+    <span id="status-text">Conectando…</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Tarjetas de estado -->
+  <div class="grid cols-4">
+    <div class="card">
+      <div class="label">Señal · CSQ</div>
+      <div class="big"><span id="csq">--</span><span class="unit"> /31</span></div>
+      <div class="signal-bars" id="signal-bars"></div>
+      <div class="sub" id="rssi">-- dBm</div>
+    </div>
+    <div class="card">
+      <div class="label">Operador</div>
+      <div class="big" style="font-size:22px" id="operator">--</div>
+      <div class="sub">Red: <span id="nettype" style="color:var(--blue)">--</span></div>
+    </div>
+    <div class="card">
+      <div class="label">Motor</div>
+      <div class="big" style="font-size:26px" id="motor-state">--</div>
+      <div class="sub" id="motor-action">Sin acciones</div>
+    </div>
+    <div class="card">
+      <div class="label">GPS</div>
+      <div class="big" style="font-size:20px" id="gps-coords">Sin fix</div>
+      <div class="sub"><a class="map-link" id="gps-link" target="_blank">ver en mapa</a></div>
+    </div>
+  </div>
+
+  <div class="grid cols-3" style="margin-top:18px">
+    <div class="card">
+      <div class="label">Uptime</div>
+      <div class="big" style="font-size:24px" id="uptime">--</div>
+    </div>
+    <div class="card">
+      <div class="label">RAM libre</div>
+      <div class="big" style="font-size:24px"><span id="heap">--</span><span class="unit"> KB</span></div>
+    </div>
+    <div class="card">
+      <div class="label">Último contacto</div>
+      <div class="big" style="font-size:18px" id="lastseen">--</div>
+    </div>
+  </div>
+
+  <!-- Controles -->
+  <div class="section-title">Control remoto</div>
+  <div class="card">
+    <div class="controls">
+      <button class="cmd" onclick="sendCmd('status')">/ status</button>
+      <button class="cmd" onclick="sendCmd('gps')">/ gps</button>
+      <button class="cmd" onclick="sendCmd('motor_on', prompt('Args (ej: 3 90 CCW)',''))">/ motor_on</button>
+      <button class="cmd" onclick="sendCmd('motor_off')">/ motor_off</button>
+      <button class="cmd danger" onclick="if(confirm('¿Reiniciar dispositivo?'))sendCmd('reiniciar')">/ reiniciar</button>
+    </div>
+  </div>
+
+  <!-- SMS y gasto -->
+  <div class="section-title">SMS · Gasto acumulado</div>
+  <div class="grid cols-2">
+    <div class="card scroll">
+      <table>
+        <thead><tr><th>Dir</th><th>Número</th><th>Texto</th><th>Coste</th><th>Hora</th></tr></thead>
+        <tbody id="sms-body"></tbody>
+      </table>
+    </div>
+    <div class="card" style="text-align:center; display:flex; flex-direction:column; justify-content:center">
+      <div class="label">Gasto total en SMS</div>
+      <div class="cost-hero"><span id="sms-cost">0.00</span>€</div>
+      <div class="sub" style="margin-top:14px">
+        <span id="sms-sent">0</span> enviados · <span id="sms-recv">0</span> recibidos
+      </div>
+      <div class="sub muted" style="margin-top:6px">0,18 € por SMS enviado</div>
+    </div>
+  </div>
+
+  <!-- Historial de comandos -->
+  <div class="section-title">Historial de comandos</div>
+  <div class="card scroll">
+    <table>
+      <thead><tr><th>Comando</th><th>Args</th><th>Origen</th><th>Estado</th><th>Resultado</th><th>Hora</th></tr></thead>
+      <tbody id="cmd-body"></tbody>
+    </table>
+  </div>
+
+  <div class="updated" style="margin-top:24px; text-align:center">
+    Actualizado: <span id="updated">--</span> · refresco cada 5 s
+  </div>
+</div>
+
+<script>
+function timeAgo(iso) {
+  if (!iso) return '--';
+  const s = Math.floor((Date.now() - new Date(iso+'Z').getTime())/1000);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'min';
+  if (s < 86400) return Math.floor(s/3600) + 'h';
+  return Math.floor(s/86400) + 'd';
+}
+function fmtUptime(s) {
+  if (s == null) return '--';
+  const d = Math.floor(s/86400), h = Math.floor((s%86400)/3600), m = Math.floor((s%3600)/60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function fmtTime(iso) {
+  if (!iso) return '--';
+  return new Date(iso+'Z').toLocaleTimeString('es-ES');
+}
+
+async function sendCmd(command, args='') {
+  if (args === null) return;
+  await fetch('/api/command', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({command, args: args||''})
+  });
+  load();
+}
+
+function renderSignal(csq) {
+  const bars = document.getElementById('signal-bars');
+  bars.innerHTML = '';
+  const level = csq == null || csq === 99 ? 0 : Math.ceil((csq/31)*5);
+  for (let i=0; i<5; i++) {
+    const d = document.createElement('div');
+    d.style.height = (20 + i*5) + '%';
+    if (i < level) d.classList.add('active');
+    bars.appendChild(d);
+  }
+}
+
+async function load() {
+  try {
+    const r = await fetch('/api/dashboard');
+    if (!r.ok) return;
+    const d = await r.json();
+
+    // Estado online
+    const dot = document.getElementById('status-dot');
+    const txt = document.getElementById('status-text');
+    if (d.device.online) { dot.className='dot on'; txt.textContent='En línea'; }
+    else { dot.className='dot off'; txt.textContent='Sin conexión'; }
+    document.getElementById('lastseen').textContent = timeAgo(d.device.last_seen) + ' atrás';
+
+    const c = d.current || {};
+    document.getElementById('csq').textContent = c.csq ?? '--';
+    document.getElementById('rssi').textContent = c.rssi_dbm != null ? c.rssi_dbm + ' dBm' : '-- dBm';
+    renderSignal(c.csq);
+    document.getElementById('operator').textContent = c.operator || '--';
+    document.getElementById('nettype').textContent = c.network_type || '--';
+    document.getElementById('motor-state').textContent = c.motor_busy ? 'OCUPADO' : 'LIBRE';
+    document.getElementById('motor-state').style.color = c.motor_busy ? 'var(--amber)' : 'var(--green)';
+    document.getElementById('motor-action').textContent = c.motor_last_action || 'Sin acciones';
+    document.getElementById('uptime').textContent = fmtUptime(c.uptime_s);
+    document.getElementById('heap').textContent = c.free_heap != null ? Math.round(c.free_heap/1024) : '--';
+
+    // GPS
+    if (c.gps_fix && c.gps_lat != null) {
+      document.getElementById('gps-coords').textContent = c.gps_lat.toFixed(4)+', '+c.gps_lon.toFixed(4);
+      document.getElementById('gps-coords').style.fontSize='15px';
+      document.getElementById('gps-link').href = `https://maps.google.com/?q=${c.gps_lat},${c.gps_lon}`;
+    } else {
+      document.getElementById('gps-coords').textContent = 'Sin fix';
+    }
+
+    // SMS
+    document.getElementById('sms-cost').textContent = d.sms.total_cost.toFixed(2);
+    document.getElementById('sms-sent').textContent = d.sms.sent;
+    document.getElementById('sms-recv').textContent = d.sms.received;
+    document.getElementById('sms-body').innerHTML = d.sms.log.map(s => `
+      <tr><td class="${s.direction==='received'?'tag-in':'tag-out'} mono">${s.direction==='received'?'IN':'OUT'}</td>
+      <td class="mono">${s.number}</td><td>${s.text.slice(0,30)}</td>
+      <td class="mono">${s.cost.toFixed(2)}€</td><td class="muted">${fmtTime(s.ts)}</td></tr>
+    `).join('') || '<tr><td colspan="5" class="muted">Sin SMS registrados</td></tr>';
+
+    // Comandos
+    document.getElementById('cmd-body').innerHTML = d.commands.map(c => `
+      <tr><td class="mono" style="color:var(--amber)">/${c.command}</td>
+      <td class="mono muted">${c.args||'-'}</td>
+      <td><span class="badge ${c.origin==='telegram'?'sent':'pending'}">${c.origin}</span></td>
+      <td><span class="badge ${c.status}">${c.status}</span></td>
+      <td>${(c.result||'-').slice(0,40)}</td>
+      <td class="muted">${fmtTime(c.ts)}</td></tr>
+    `).join('') || '<tr><td colspan="6" class="muted">Sin comandos</td></tr>';
+
+    document.getElementById('updated').textContent = new Date().toLocaleTimeString('es-ES');
+  } catch(e) { console.error(e); }
+}
+
+load();
+setInterval(load, 5000);
+</script>
+</body>
+</html>
