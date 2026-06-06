@@ -14,6 +14,6 @@ COPY app ./app
 RUN mkdir -p /data && chmod 777 /data
 VOLUME ["/data"]
 
-EXPOSE 8000
+EXPOSE 8017
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8017"]
