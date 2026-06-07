@@ -119,6 +119,25 @@
   .scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
 
   .cost-hero { font-size: 48px; font-weight: 900; font-family: 'Space Mono', monospace; color: var(--amber); }
+
+  /* LEDs */
+  .led-row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .led-card { flex: 1; min-width: 200px; background: var(--panel-2); border: 1px solid var(--line);
+              border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 16px; }
+  .led-bulb { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line);
+              background: #2a2f38; transition: all .3s; flex-shrink: 0; }
+  .led-bulb.on-yellow { background: #f5c518; border-color: #f5c518; box-shadow: 0 0 16px #f5c518; }
+  .led-bulb.on-green  { background: #3ddc84; border-color: #3ddc84; box-shadow: 0 0 16px #3ddc84; }
+  .led-bulb.on-red    { background: #ff5252; border-color: #ff5252; box-shadow: 0 0 16px #ff5252; }
+  .led-info { flex: 1; }
+  .led-name { font-weight: 700; font-size: 14px; }
+  .led-state { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .led-btns { display: flex; gap: 6px; }
+  .led-btn { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; padding: 7px 12px;
+             border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--txt);
+             cursor: pointer; transition: all .2s; }
+  .led-btn.on:hover { border-color: var(--green); color: var(--green); }
+  .led-btn.off:hover { border-color: var(--red); color: var(--red); }
   .map-link { color: var(--blue); text-decoration: none; font-family: 'Space Mono', monospace; }
   .map-link:hover { text-decoration: underline; }
   .muted { color: var(--muted); }
@@ -195,6 +214,44 @@
       <button class="cmd" onclick="sendCmd('motor_on', prompt('Args (ej: 3 90 CCW)',''))">/ motor_on</button>
       <button class="cmd" onclick="sendCmd('motor_off')">/ motor_off</button>
       <button class="cmd danger" onclick="if(confirm('¿Reiniciar dispositivo?'))sendCmd('reiniciar')">/ reiniciar</button>
+    </div>
+  </div>
+
+  <!-- LEDs -->
+  <div class="section-title">LEDs</div>
+  <div class="led-row">
+    <div class="led-card">
+      <div class="led-bulb" id="bulb-yellow"></div>
+      <div class="led-info">
+        <div class="led-name">Amarillo</div>
+        <div class="led-state" id="state-yellow">--</div>
+      </div>
+      <div class="led-btns">
+        <button class="led-btn on" onclick="sendCmd('yellow_on')">ON</button>
+        <button class="led-btn off" onclick="sendCmd('yellow_off')">OFF</button>
+      </div>
+    </div>
+    <div class="led-card">
+      <div class="led-bulb" id="bulb-green"></div>
+      <div class="led-info">
+        <div class="led-name">Verde</div>
+        <div class="led-state" id="state-green">--</div>
+      </div>
+      <div class="led-btns">
+        <button class="led-btn on" onclick="sendCmd('blue_on')">ON</button>
+        <button class="led-btn off" onclick="sendCmd('blue_off')">OFF</button>
+      </div>
+    </div>
+    <div class="led-card">
+      <div class="led-bulb" id="bulb-red"></div>
+      <div class="led-info">
+        <div class="led-name">Rojo</div>
+        <div class="led-state" id="state-red">--</div>
+      </div>
+      <div class="led-btns">
+        <button class="led-btn on" onclick="sendCmd('red_on')">ON</button>
+        <button class="led-btn off" onclick="sendCmd('red_off')">OFF</button>
+      </div>
     </div>
   </div>
 
@@ -306,6 +363,17 @@ async function load() {
     } else {
       document.getElementById('gps-coords').textContent = 'Sin fix';
     }
+
+    // LEDs
+    function setLed(bulbId, stateId, on, cls) {
+      const bulb = document.getElementById(bulbId);
+      bulb.className = 'led-bulb' + (on ? ' ' + cls : '');
+      document.getElementById(stateId).textContent =
+        on === true ? 'ENCENDIDO' : on === false ? 'APAGADO' : '--';
+    }
+    setLed('bulb-yellow', 'state-yellow', c.led_yellow, 'on-yellow');
+    setLed('bulb-green',  'state-green',  c.led_green,  'on-green');
+    setLed('bulb-red',    'state-red',    c.led_red,    'on-red');
 
     // SMS
     document.getElementById('sms-cost').textContent = d.sms.total_cost.toFixed(2);

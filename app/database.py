@@ -47,6 +47,14 @@ def init_db() -> None:
     with engine.connect() as conn:
         conn.exec_driver_sql("PRAGMA journal_mode=WAL;")
         conn.exec_driver_sql("PRAGMA synchronous=NORMAL;")
+        # Migracion ligera: añadir columnas LED si la tabla ya existia
+        # (create_all no altera tablas existentes). Ignora si ya estan.
+        for col in ("led_yellow", "led_green", "led_red"):
+            try:
+                conn.exec_driver_sql(
+                    f"ALTER TABLE telemetry ADD COLUMN {col} BOOLEAN;")
+            except Exception:
+                pass  # la columna ya existe
 
 
 def get_session():

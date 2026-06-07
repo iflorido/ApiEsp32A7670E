@@ -45,6 +45,9 @@ class Telemetry(SQLModel, table=True):
     gps_fix: Optional[bool] = None
     free_heap: Optional[int] = None                # RAM libre (bytes)
     uptime_s: Optional[int] = None
+    led_yellow: Optional[bool] = None
+    led_green: Optional[bool] = None
+    led_red: Optional[bool] = None
     raw_json: Optional[str] = None                 # JSON completo por si acaso
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

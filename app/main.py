@@ -38,6 +38,7 @@ from . import telegram
 # Comandos soportados (los mismos que SMS + los nuevos)
 KNOWN_COMMANDS = {
     "status", "gps", "reiniciar", "motor_on", "motor_off",
+    "yellow_on", "yellow_off", "blue_on", "blue_off", "red_on", "red_off",
 }
 
 
@@ -134,6 +135,9 @@ async def report(request: Request,
         gps_fix=data.get("gps_fix"),
         free_heap=data.get("free_heap"),
         uptime_s=data.get("uptime_s"),
+        led_yellow=data.get("led_yellow"),
+        led_green=data.get("led_green"),
+        led_red=data.get("led_red"),
         raw_json=json.dumps(data),
     )
     session.add(t)
@@ -289,6 +293,7 @@ def dashboard_data(user: str = Depends(auth_dashboard),
             "motor_last_action": t.motor_last_action,
             "gps_lat": t.gps_lat, "gps_lon": t.gps_lon, "gps_fix": t.gps_fix,
             "free_heap": t.free_heap, "uptime_s": t.uptime_s,
+            "led_yellow": t.led_yellow, "led_green": t.led_green, "led_red": t.led_red,
             "ts": t.created_at.isoformat(),
         }
 
